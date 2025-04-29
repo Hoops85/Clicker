@@ -1,15 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Sonic Builder Clicker</title>
+  <meta charset="UTF-8" />
+  <title>Sonic Clicker</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-    button { font-size: 20px; padding: 15px 30px; margin: 20px; }
-    #log { margin-top: 30px; max-height: 400px; overflow-y: scroll; text-align: left; border: 1px solid #ccc; padding: 15px; }
-    .special { color: green; font-weight: bold; }
-    .error { color: red; }
+    body {
+      background-color: #0d0d0f;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #f0f0f0;
+      text-align: center;
+      padding: 50px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      color: #ff914d;
+      background: linear-gradient(90deg, #ff914d, #ff5e62);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    button {
+      background: #1e1f25;
+      border: 2px solid #ff914d;
+      color: #ffffff;
+      padding: 14px 28px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #ff914d;
+      color: #0d0d0f;
+    }
+
+    #status {
+      margin-top: 20px;
+      font-size: 1.1rem;
+    }
+
+    .message-block {
+      margin-top: 30px;
+      font-size: 1.1rem;
+      line-height: 1.8;
+    }
+
+    .tx-link {
+      color: #57c1ff;
+      text-decoration: none;
+    }
+
+    .tx-link:hover {
+      text-decoration: underline;
+    }
+
+    .entry {
+      font-size: 1.4rem;
+      color: #42ffb3;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .vienna {
+      color: #cfcfcf;
+      font-style: italic;
+      margin-top: 5px;
+    }
   </style>
 </head>
 <body>
@@ -17,58 +76,38 @@
   <h1>🚀 Sonic is for Builders 🚀</h1>
   <button id="mintButton">Mint Your Click</button>
   <div id="status"></div>
-  <div id="log"></div>
+  <div id="log" class="message-block"></div>
 
   <script>
-    const contractAddress = "0x86b550EA81eA81a55DD4a1354E6bf4855d7abF4D"; // Your contract address
+    const contractAddress = "0x86b550EA81eA81a55DD4a1354E6bf4855d7abF4D";
 
     const abi = [
       "function click() public",
       "event Clicked(address indexed user, uint256 totalClicks, string message)"
     ];
 
-    // Local counter for winners (frontend only)
-    let winnersCount = 0;
-    const maxWinners = 3;
-
     async function switchToSonicChain() {
-      const sonicChainId = '0x92'; // 146 decimal -> 0x92 hex
+      const sonicChainId = '0x92';
       const sonicParams = {
         chainId: sonicChainId,
         chainName: 'Sonic',
-        nativeCurrency: {
-          name: 'SONIC',
-          symbol: 'SONIC',
-          decimals: 18
-        },
+        nativeCurrency: { name: 'SONIC', symbol: 'SONIC', decimals: 18 },
         rpcUrls: ['https://rpc.sonicchain.io'],
         blockExplorerUrls: ['https://sonicscan.io']
       };
 
       try {
-        await window.ethereum.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: sonicChainId }],
-        });
+        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: sonicChainId }] });
       } catch (switchError) {
         if (switchError.code === 4902) {
-          try {
-            await window.ethereum.request({
-              method: 'wallet_addEthereumChain',
-              params: [sonicParams],
-            });
-          } catch (addError) {
-            console.error('Failed to add Sonic chain:', addError);
-          }
-        } else {
-          console.error('Failed to switch to Sonic chain:', switchError);
+          await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [sonicParams] });
         }
       }
     }
 
     async function connectWallet() {
-      if (typeof window.ethereum === "undefined") {
-        alert("No Ethereum provider detected (MetaMask, Rabby, etc). Please install one.");
+      if (!window.ethereum) {
+        alert("No Ethereum provider found.");
         return null;
       }
 
@@ -77,15 +116,14 @@
         await provider.send("eth_requestAccounts", []);
         const signer = provider.getSigner();
         return { provider, signer };
-      } catch (error) {
-        console.error("Wallet connection error:", error);
-        alert("Failed to connect wallet: " + error.message);
+      } catch (err) {
+        alert("Wallet connection failed: " + err.message);
         return null;
       }
     }
 
     async function mint() {
-      await switchToSonicChain(); // 🔥 Ensure Sonic network first
+      await switchToSonicChain();
 
       const connection = await connectWallet();
       if (!connection) return;
@@ -100,31 +138,23 @@
         const tx = await contract.click();
         await tx.wait();
 
-        document.getElementById("status").innerText = "✅ Click Minted!";
-        log(`✅ Sonic is for Builders! TX: <a href="https://sonicscan.io/tx/${tx.hash}" target="_blank">${tx.hash}</a>`);
-
-        log(`💬 Hope to see you in Vienna 🇦🇹`);
-
-        if (winnersCount < maxWinners) {
-          winnersCount++;
-          log(`🎟️ <span class="special">🎉 Congratulations! You are a Sonic Summit Ticket Winner! 🎉</span>`);
-        }
-      } catch (error) {
-        console.error("Transaction error:", error);
-        document.getElementById("status").innerText = "Error: " + error.message;
+        document.getElementById("status").innerHTML = "✅ Click Minted!";
+        const logDiv = document.getElementById("log");
+        logDiv.innerHTML = `
+          <div class="entry">🎟️ 🎉 Congratulations! You are entered for a chance to win a Sonic Summit Ticket! 🎉</div>
+          <div class="vienna">💬 Hope to see you in Vienna 🇦🇹</div>
+          <br>✅ Sonic is for Builders! TX: 
+          <a class="tx-link" href="https://sonicscan.io/tx/${tx.hash}" target="_blank">${tx.hash}</a>
+        `;
+      } catch (err) {
+        console.error(err);
+        document.getElementById("status").innerText = "Error: " + err.message;
         document.getElementById("status").className = "error";
       }
     }
 
-    function log(message) {
-      const logDiv = document.getElementById("log");
-      const entry = document.createElement("div");
-      entry.innerHTML = message;
-      logDiv.prepend(entry);
-    }
-
     document.getElementById("mintButton").addEventListener("click", mint);
   </script>
-
 </body>
 </html>
+
