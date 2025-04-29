@@ -9,54 +9,67 @@
     button { font-size: 20px; padding: 15px 30px; margin: 20px; }
     #log { margin-top: 30px; max-height: 400px; overflow-y: scroll; text-align: left; border: 1px solid #ccc; padding: 15px; }
     .winner { color: green; font-weight: bold; }
+    .error { color: red; }
   </style>
 </head>
 <body>
 
   <h1>🚀 Sonic is for Builders 🚀</h1>
-  <button onclick="mint()">Mint Your Click</button>
+  <button id="mintButton">Mint Your Click</button>
   <div id="status"></div>
   <div id="log"></div>
 
   <script>
-    // Replace this with your contract address after deployment
     const contractAddress = "0x86b550EA81eA81a55DD4a1354E6bf4855d7abF4D";
 
-    // Replace this with your ABI
     const abi = [
       "function click() public",
       "event Clicked(address indexed user, uint256 totalClicks, string message)"
     ];
 
-    async function mint() {
-      if (!window.ethereum) {
-        alert("MetaMask is not installed!");
-        return;
+    async function connectWallet() {
+      if (typeof window.ethereum === "undefined") {
+        alert("No Ethereum provider detected (MetaMask, Rabby, etc). Please install one.");
+        return null;
       }
 
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
-      const signer = provider.getSigner();
+      try {
+        const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+        await provider.send("eth_requestAccounts", []);
+        const signer = provider.getSigner();
+        return { provider, signer };
+      } catch (error) {
+        console.error("Wallet connection error:", error);
+        alert("Failed to connect wallet: " + error.message);
+        return null;
+      }
+    }
+
+    async function mint() {
+      const connection = await connectWallet();
+      if (!connection) return;
+
+      const { signer } = connection;
       const contract = new ethers.Contract(contractAddress, abi, signer);
 
       document.getElementById("status").innerText = "Minting...";
+      document.getElementById("status").className = "";
 
       try {
         const tx = await contract.click();
-        const receipt = await tx.wait();
+        await tx.wait();
 
-        document.getElementById("status").innerText = "Click Minted!";
-
-        // Always print Sonic is for Builders
-        log(`✅ Sonic is for Builders! TX: ${tx.hash}`);
+        document.getElementById("status").innerText = "✅ Click Minted!";
+        log(`✅ Sonic is for Builders! TX: <a href="https://sonicscan.io/tx/${tx.hash}" target="_blank">${tx.hash}</a>`);
 
         // Random 1 in 3 chance
         if (Math.random() < 0.333) {
           log(`🎟️ <span class="winner">You won a Sonic Summit ticket!</span> 🎉`);
         }
       } catch (error) {
-        console.error(error);
+        console.error("Transaction error:", error);
         document.getElementById("status").innerText = "Error: " + error.message;
+        document.getElementById("status").className = "error";
       }
     }
 
@@ -66,6 +79,8 @@
       entry.innerHTML = message;
       logDiv.prepend(entry);
     }
+
+    document.getElementById("mintButton").addEventListener("click", mint);
   </script>
 
 </body>
