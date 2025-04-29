@@ -21,6 +21,18 @@
       -webkit-text-fill-color: transparent;
     }
 
+    h2 {
+      font-weight: normal;
+      color: #ccc;
+      margin-bottom: 5px;
+    }
+
+    #countdown {
+      font-size: 1.2rem;
+      color: #57c1ff;
+      margin-bottom: 20px;
+    }
+
     button {
       background: #1e1f25;
       border: 2px solid #ff914d;
@@ -75,17 +87,43 @@
 
   <h1>🚀 Sonic is for Builders 🚀</h1>
   <h2>Mint a chance for 1 of 3 Sonic Summit Tickets</h2>
+  <div id="countdown">Loading countdown...</div>
   <button id="mintButton">Mint Your Chance</button>
   <div id="status"></div>
   <div id="log" class="message-block"></div>
 
   <script>
     const contractAddress = "0x86b550EA81eA81a55DD4a1354E6bf4855d7abF4D";
-
     const abi = [
       "function click() public",
       "event Clicked(address indexed user, uint256 totalClicks, string message)"
     ];
+
+    // 🎯 Countdown Target: 3 days from now
+    const countdownTarget = new Date().getTime() + 3 * 24 * 60 * 60 * 1000;
+
+    function startCountdown() {
+      const countdownEl = document.getElementById("countdown");
+      const interval = setInterval(() => {
+        const now = new Date().getTime();
+        const remaining = countdownTarget - now;
+
+        if (remaining <= 0) {
+          clearInterval(interval);
+          countdownEl.innerHTML = "⏳ Minting period has ended.";
+          document.getElementById("mintButton").disabled = true;
+          document.getElementById("mintButton").innerText = "Minting Closed";
+        } else {
+          const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+          countdownEl.innerHTML = `⏳ Ends in ${days}d ${hours}h ${minutes}m ${seconds}s`;
+        }
+      }, 1000);
+    }
+
+    startCountdown();
 
     async function switchToSonicChain() {
       const sonicChainId = '0x92';
@@ -158,4 +196,3 @@
   </script>
 </body>
 </html>
-
