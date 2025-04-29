@@ -8,7 +8,7 @@
     body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
     button { font-size: 20px; padding: 15px 30px; margin: 20px; }
     #log { margin-top: 30px; max-height: 400px; overflow-y: scroll; text-align: left; border: 1px solid #ccc; padding: 15px; }
-    .winner { color: green; font-weight: bold; }
+    .special { color: green; font-weight: bold; }
     .error { color: red; }
   </style>
 </head>
@@ -20,12 +20,51 @@
   <div id="log"></div>
 
   <script>
-    const contractAddress = "0x86b550EA81eA81a55DD4a1354E6bf4855d7abF4D";
+    const contractAddress = "0x86b550EA81eA81a55DD4a1354E6bf4855d7abF4D"; // Your contract address
 
     const abi = [
       "function click() public",
       "event Clicked(address indexed user, uint256 totalClicks, string message)"
     ];
+
+    // Local counter for winners (frontend only)
+    let winnersCount = 0;
+    const maxWinners = 3;
+
+    async function switchToSonicChain() {
+      const sonicChainId = '0x92'; // 146 decimal -> 0x92 hex
+      const sonicParams = {
+        chainId: sonicChainId,
+        chainName: 'Sonic',
+        nativeCurrency: {
+          name: 'SONIC',
+          symbol: 'SONIC',
+          decimals: 18
+        },
+        rpcUrls: ['https://rpc.sonicchain.io'],
+        blockExplorerUrls: ['https://sonicscan.io']
+      };
+
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: sonicChainId }],
+        });
+      } catch (switchError) {
+        if (switchError.code === 4902) {
+          try {
+            await window.ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [sonicParams],
+            });
+          } catch (addError) {
+            console.error('Failed to add Sonic chain:', addError);
+          }
+        } else {
+          console.error('Failed to switch to Sonic chain:', switchError);
+        }
+      }
+    }
 
     async function connectWallet() {
       if (typeof window.ethereum === "undefined") {
@@ -46,6 +85,8 @@
     }
 
     async function mint() {
+      await switchToSonicChain(); // 🔥 Ensure Sonic network first
+
       const connection = await connectWallet();
       if (!connection) return;
 
@@ -62,9 +103,11 @@
         document.getElementById("status").innerText = "✅ Click Minted!";
         log(`✅ Sonic is for Builders! TX: <a href="https://sonicscan.io/tx/${tx.hash}" target="_blank">${tx.hash}</a>`);
 
-        // Random 1 in 3 chance
-        if (Math.random() < 0.333) {
-          log(`🎟️ <span class="winner">You won a Sonic Summit ticket!</span> 🎉`);
+        log(`💬 Hope to see you in Vienna 🇦🇹`);
+
+        if (winnersCount < maxWinners) {
+          winnersCount++;
+          log(`🎟️ <span class="special">🎉 Congratulations! You are a Sonic Summit Ticket Winner! 🎉</span>`);
         }
       } catch (error) {
         console.error("Transaction error:", error);
