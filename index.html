@@ -74,7 +74,8 @@
 <body>
 
   <h1>🚀 Sonic is for Builders 🚀</h1>
-  <button id="mintButton">Mint Your Click</button>
+  <h2>Mint a chance for 1 of 3 Sonic Summit Tickets</h2>
+  <button id="mintButton">Mint Your Chance</button>
   <div id="status"></div>
   <div id="log" class="message-block"></div>
 
@@ -142,7 +143,7 @@
         const logDiv = document.getElementById("log");
         logDiv.innerHTML = `
           <div class="entry">🎟️ 🎉 Congratulations! You are entered for a chance to win a Sonic Summit Ticket! 🎉</div>
-          <div class="vienna">💬 Hope to see you in Vienna 🇦🇹</div>
+          <div class="vienna">💬 Hope to see you in Vienna!</div>
           <br>✅ Sonic is for Builders! TX: 
           <a class="tx-link" href="https://sonicscan.io/tx/${tx.hash}" target="_blank">${tx.hash}</a>
         `;
