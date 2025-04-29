@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sonic Builder Clicker</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+    button { font-size: 20px; padding: 15px 30px; margin: 20px; }
+    #log { margin-top: 30px; max-height: 400px; overflow-y: scroll; text-align: left; border: 1px solid #ccc; padding: 15px; }
+    .winner { color: green; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <h1>🚀 Sonic is for Builders 🚀</h1>
+  <button onclick="mint()">Mint Your Click</button>
+  <div id="status"></div>
+  <div id="log"></div>
+
+  <script>
+    // Replace this with your contract address after deployment
+    const contractAddress = "0xYourDeployedContractAddressHere";
+
+    // Replace this with your ABI
+    const abi = [
+      "function click() public",
+      "event Clicked(address indexed user, uint256 totalClicks, string message)"
+    ];
+
+    async function mint() {
+      if (!window.ethereum) {
+        alert("MetaMask is not installed!");
+        return;
+      }
+
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      const signer = provider.getSigner();
+      const contract = new ethers.Contract(contractAddress, abi, signer);
+
+      document.getElementById("status").innerText = "Minting...";
+
+      try {
+        const tx = await contract.click();
+        const receipt = await tx.wait();
+
+        document.getElementById("status").innerText = "Click Minted!";
+
+        // Always print Sonic is for Builders
+        log(`✅ Sonic is for Builders! TX: ${tx.hash}`);
+
+        // Random 1 in 3 chance
+        if (Math.random() < 0.333) {
+          log(`🎟️ <span class="winner">You won a Sonic Summit ticket!</span> 🎉`);
+        }
+      } catch (error) {
+        console.error(error);
+        document.getElementById("status").innerText = "Error: " + error.message;
+      }
+    }
+
+    function log(message) {
+      const logDiv = document.getElementById("log");
+      const entry = document.createElement("div");
+      entry.innerHTML = message;
+      logDiv.prepend(entry);
+    }
+  </script>
+
+</body>
+</html>
