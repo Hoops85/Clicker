@@ -1,53 +1,218 @@
-const contractAddress = "0x86b550EA81eA81a55DD4a1354E6bf4855d7abF4D";
-const abi = [
-  "function click() public",
-  "event Clicked(address indexed user, uint256 totalClicks, string message)"
-];
-
-// 🎯 Set your fixed UTC start datetime here
-const campaignStartTime = new Date('2025-04-30T12:00:00Z').getTime();
-
-// 🎯 Set your campaign duration here (in milliseconds)
-const campaignDuration = 3 * 24 * 60 * 60 * 1000; // 3 days
-
-const countdownTarget = campaignStartTime + campaignDuration;
-
-function startCountdown() {
-  const countdownEl = document.getElementById("countdown");
-  const mintButton = document.getElementById("mintButton");
-
-  const interval = setInterval(() => {
-    const now = new Date().getTime();
-
-    if (now < campaignStartTime) {
-      const timeUntilStart = campaignStartTime - now;
-      const days = Math.floor(timeUntilStart / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((timeUntilStart % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((timeUntilStart % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((timeUntilStart % (1000 * 60)) / 1000);
-
-      countdownEl.innerHTML = `⏳ Minting opens in ${days}d ${hours}h ${minutes}m ${seconds}s`;
-      mintButton.disabled = true;
-      mintButton.innerText = "Minting Not Started";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sonic Clicker</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <style>
+    body {
+      background-color: #0d0d0f;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #f0f0f0;
+      text-align: center;
+      padding: 50px;
     }
-    else if (now >= campaignStartTime && now <= countdownTarget) {
-      const remaining = countdownTarget - now;
-      const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
 
-      countdownEl.innerHTML = `⏳ Ends in ${days}d ${hours}h ${minutes}m ${seconds}s`;
-      mintButton.disabled = false;
-      mintButton.innerText = "Mint Your Chance";
+    h1 {
+      font-size: 2.5rem;
+      color: #ff914d;
+      background: linear-gradient(90deg, #ff914d, #ff5e62);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
-    else {
-      clearInterval(interval);
-      countdownEl.innerHTML = "⏳ Minting period has ended.";
-      mintButton.disabled = true;
-      mintButton.innerText = "Minting Closed";
-    }
-  }, 1000);
-}
 
-startCountdown();
+    h2 {
+      font-weight: normal;
+      color: #ccc;
+      margin-bottom: 5px;
+    }
+
+    #countdown {
+      font-size: 1.2rem;
+      color: #57c1ff;
+      margin-bottom: 20px;
+    }
+
+    button {
+      background: #1e1f25;
+      border: 2px solid #ff914d;
+      color: #ffffff;
+      padding: 14px 28px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background-color: #ff914d;
+      color: #0d0d0f;
+    }
+
+    #status {
+      margin-top: 20px;
+      font-size: 1.1rem;
+    }
+
+    .message-block {
+      margin-top: 30px;
+      font-size: 1.1rem;
+      line-height: 1.8;
+    }
+
+    .tx-link {
+      color: #57c1ff;
+      text-decoration: none;
+    }
+
+    .tx-link:hover {
+      text-decoration: underline;
+    }
+
+    .entry {
+      font-size: 1.4rem;
+      color: #42ffb3;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .vienna {
+      color: #cfcfcf;
+      font-style: italic;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🚀 Sonic is for Builders 🚀</h1>
+  <h2>Mint a chance for 1 of 3 Sonic Summit Tickets</h2>
+  <div id="countdown">Loading countdown...</div>
+  <button id="mintButton">Mint Your Chance</button>
+  <div id="status"></div>
+  <div id="log" class="message-block"></div>
+
+  <script>
+    const contractAddress = "0x86b550EA81eA81a55DD4a1354E6bf4855d7abF4D";
+    const abi = [
+      "function click() public",
+      "event Clicked(address indexed user, uint256 totalClicks, string message)"
+    ];
+
+    // 🎯 Fixed UTC start time
+    const campaignStartTime = new Date('2025-04-30T12:00:00Z').getTime(); // set your desired UTC start
+    const campaignDuration = 3 * 24 * 60 * 60 * 1000; // 3 days
+    const countdownTarget = campaignStartTime + campaignDuration;
+
+    function startCountdown() {
+      const countdownEl = document.getElementById("countdown");
+      const mintButton = document.getElementById("mintButton");
+
+      const interval = setInterval(() => {
+        const now = new Date().getTime();
+
+        if (now < campaignStartTime) {
+          const timeUntilStart = campaignStartTime - now;
+          const days = Math.floor(timeUntilStart / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((timeUntilStart % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const minutes = Math.floor((timeUntilStart % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((timeUntilStart % (1000 * 60)) / 1000);
+
+          countdownEl.innerHTML = `⏳ Minting opens in ${days}d ${hours}h ${minutes}m ${seconds}s`;
+          mintButton.disabled = true;
+          mintButton.innerText = "Minting Not Started";
+        }
+        else if (now >= campaignStartTime && now <= countdownTarget) {
+          const remaining = countdownTarget - now;
+          const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+
+          countdownEl.innerHTML = `⏳ Ends in ${days}d ${hours}h ${minutes}m ${seconds}s`;
+          mintButton.disabled = false;
+          mintButton.innerText = "Mint Your Chance";
+        }
+        else {
+          clearInterval(interval);
+          countdownEl.innerHTML = "⏳ Minting period has ended.";
+          mintButton.disabled = true;
+          mintButton.innerText = "Minting Closed";
+        }
+      }, 1000);
+    }
+
+    startCountdown();
+
+    async function switchToSonicChain() {
+      const sonicChainId = '0x92';
+      const sonicParams = {
+        chainId: sonicChainId,
+        chainName: 'Sonic',
+        nativeCurrency: { name: 'SONIC', symbol: 'SONIC', decimals: 18 },
+        rpcUrls: ['https://rpc.sonicchain.io'],
+        blockExplorerUrls: ['https://sonicscan.io']
+      };
+
+      try {
+        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: sonicChainId }] });
+      } catch (switchError) {
+        if (switchError.code === 4902) {
+          await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [sonicParams] });
+        }
+      }
+    }
+
+    async function connectWallet() {
+      if (!window.ethereum) {
+        alert("No Ethereum provider found.");
+        return null;
+      }
+
+      try {
+        const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+        await provider.send("eth_requestAccounts", []);
+        const signer = provider.getSigner();
+        return { provider, signer };
+      } catch (err) {
+        alert("Wallet connection failed: " + err.message);
+        return null;
+      }
+    }
+
+    async function mint() {
+      await switchToSonicChain();
+
+      const connection = await connectWallet();
+      if (!connection) return;
+
+      const { signer } = connection;
+      const contract = new ethers.Contract(contractAddress, abi, signer);
+
+      document.getElementById("status").innerText = "Minting...";
+      document.getElementById("status").className = "";
+
+      try {
+        const tx = await contract.click();
+        await tx.wait();
+
+        document.getElementById("status").innerHTML = "✅ Click Minted!";
+        const logDiv = document.getElementById("log");
+        logDiv.innerHTML = `
+          <div class="entry">🎟️ 🎉 Congratulations! You are entered for a chance to win a Sonic Summit Ticket! 🎉</div>
+          <div class="vienna">💬 Hope to see you in Vienna!</div>
+          <br>✅ Sonic is for Builders! TX: 
+          <a class="tx-link" href="https://sonicscan.io/tx/${tx.hash}" target="_blank">${tx.hash}</a>
+        `;
+      } catch (err) {
+        console.error(err);
+        document.getElementById("status").innerText = "Error: " + err.message;
+        document.getElementById("status").className = "error";
+      }
+    }
+
+    document.getElementById("mintButton").addEventListener("click", mint);
+  </script>
+</body>
+</html>
