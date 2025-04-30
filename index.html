@@ -94,14 +94,14 @@
   <div id="log" class="message-block"></div>
 
   <script>
-    const contractAddress = "0x86b550EA81eA81a55DD4a1354E6bf4855d7abF4D";
+    const contractAddress = "0x5974fbed7dba2ea725b250781e2b3b123198c3f3";
     const abi = [
       "function click() public",
       "event Clicked(address indexed user, uint256 totalClicks, string message)"
     ];
 
     // 🎯 Fixed UTC start time
-    const campaignStartTime = new Date('2025-04-30T03:20:00Z').getTime(); // set your desired UTC start
+    const campaignStartTime = new Date('2025-04-30T04:00:00Z').getTime(); // set your desired UTC start
     const campaignDuration = 2 * 24 * 60 * 60 * 1000; // 2 days
     const countdownTarget = campaignStartTime + campaignDuration;
 
